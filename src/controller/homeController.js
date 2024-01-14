@@ -1,18 +1,13 @@
-// Get the client
-import mysql from "mysql2";
+import userService from "../service/userService";
 
-// Create the connection to database
-const connection = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  database: "jwt-nodejs",
-});
 const handlerHelloWorld = (req, res) => {
   return res.render("home.ejs");
 };
 
-const handlerUser = (req, res) => {
-  return res.render("user.ejs");
+const handlerUserPage = async (req, res) => {
+  let userList = await userService.getUserList();
+
+  return res.render("user.ejs", { userList });
 };
 
 const handlerCreateNewUser = (req, res) => {
@@ -20,22 +15,34 @@ const handlerCreateNewUser = (req, res) => {
   let username = req.body.username;
   let password = req.body.password;
 
-  // A simple SELECT query
-  connection.query(
-    "INSERT INTO users (email,password,username) VALUES (?,?,?)",
-    [email, password, username],
-    function (err, results, fields) {
-      if (err) {
-        console.log(err);
-      }
-      console.log(results); // results contains rows returned by server
-    }
-  );
-
-  return res.send("Request had send!");
+  userService.createNewUser(email, password, username);
+  return res.redirect("/user");
+};
+const handlerDeleteUser = async (req, res) => {
+  await userService.deleteUser(req.params.id);
+  return res.redirect("/user");
+};
+const handlerEditUser = async (req, res) => {
+  let id = req.params.id;
+  let user = await userService.editUser(id);
+  let userData = {};
+  if (user && user.length > 0) {
+    userData = user[0];
+  }
+  return res.render("user-update.ejs", { userData });
+};
+const handlerUpdateUser = async (req, res) => {
+  let id = req.body.id;
+  let email = req.body.email;
+  let username = req.body.username;
+  await userService.updateUser(email, username, id);
+  return res.redirect("/user");
 };
 module.exports = {
   handlerHelloWorld,
-  handlerUser,
+  handlerUserPage,
   handlerCreateNewUser,
+  handlerDeleteUser,
+  handlerEditUser,
+  handlerUpdateUser,
 };
